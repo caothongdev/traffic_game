@@ -6,7 +6,6 @@ import MultiplayerMock from './components/MultiplayerMock';
 import ChallengeSection from './components/ChallengeSection';
 import LeaderboardSection from './components/LeaderboardSection';
 import NameEntry from './components/NameEntry';
-import SupabaseStatus from './components/SupabaseStatus';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>(View.MENU);
@@ -172,9 +171,6 @@ const App: React.FC = () => {
       <footer className="mt-auto py-6 text-center text-gray-400 text-xs">
         <p className="font-semibold opacity-60">© 2025 Traffic Game</p>
       </footer>
-
-      {/* Supabase Connection Status */}
-      <SupabaseStatus />
     </div>
   );
 };
