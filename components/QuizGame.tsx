@@ -1,12 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { QUESTIONS } from '../constants';
+import { Question } from '../types';
+import ConfirmModal from './ConfirmModal';
+import { saveMainGameResult } from '../utils/leaderboard';
 
 interface QuizGameProps {
   onBack: () => void;
+  playerName: string;
 }
 
-const QuizGame: React.FC<QuizGameProps> = ({ onBack }) => {
+const QuizGame: React.FC<QuizGameProps> = ({ onBack, playerName }) => {
+  const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [carPosition, setCarPosition] = useState(5); // percentage start
   const [score, setScore] = useState(0);
@@ -15,11 +20,50 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack }) => {
   const [isGameOver, setIsGameOver] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [shake, setShake] = useState(false);
+  const [showGiveUpModal, setShowGiveUpModal] = useState(false);
 
-  const currentQuestion = QUESTIONS[currentQuestionIndex];
+  // Save result when game over
+  useEffect(() => {
+    if (isGameOver && playerName) {
+      saveMainGameResult(playerName, score);
+    }
+  }, [isGameOver]);
+
+  // Random 15 câu hỏi khi game bắt đầu
+  useEffect(() => {
+    const shuffled = [...QUESTIONS].sort(() => Math.random() - 0.5);
+    setSelectedQuestions(shuffled.slice(0, 15));
+  }, []);
+
+  // Timer effect
+  useEffect(() => {
+    if (isGameOver || isPaused || selectedQuestions.length === 0) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          handleAnswer(-1); // Time out
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isGameOver, isPaused, currentQuestionIndex, selectedQuestions.length]);
+
+  if (selectedQuestions.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-2xl font-bold text-gray-500">Đang tải câu hỏi...</div>
+      </div>
+    );
+  }
+
+  const currentQuestion = selectedQuestions[currentQuestionIndex];
   
   // Calculate progress to determine if finish line should show
-  const progress = (currentQuestionIndex / QUESTIONS.length) * 100;
+  const progress = (currentQuestionIndex / selectedQuestions.length) * 100;
 
   const handleAnswer = (index: number) => {
     if (isPaused || isGameOver) return;
@@ -49,11 +93,20 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack }) => {
     }
   };
 
+  const handleGiveUp = () => {
+    setShowGiveUpModal(true);
+  };
+
+  const confirmGiveUp = () => {
+    setShowGiveUpModal(false);
+    setIsGameOver(true);
+  };
+
   const nextQuestion = () => {
     setFeedback({ type: null, message: '' });
     setIsPaused(false);
     setTimeLeft(20);
-    if (currentQuestionIndex < QUESTIONS.length - 1) {
+    if (currentQuestionIndex < selectedQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
       setCarPosition(90); // Cross finish line
@@ -61,28 +114,17 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack }) => {
     }
   };
 
-  useEffect(() => {
-    if (isGameOver || isPaused) return;
-
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          handleAnswer(-1); // Time out
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [isGameOver, isPaused, currentQuestionIndex]);
-
   if (isGameOver) {
+    const isFinished = currentQuestionIndex >= selectedQuestions.length - 1;
     return (
       <div className="flex flex-col items-center justify-center p-8 bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl animate-in fade-in zoom-in duration-500 max-w-md mx-auto border-4 border-yellow-400">
         <div className="text-6xl mb-4 animate-bounce">🏆</div>
-        <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-500 mb-2">VỀ ĐÍCH!</h2>
-        <p className="text-gray-500 mb-6 font-bold">Bạn đã hoàn thành chặng đua</p>
+        <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-500 mb-2">
+          {isFinished ? 'VỀ ĐÍCH!' : 'KẾT THÚC!'}
+        </h2>
+        <p className="text-gray-500 mb-6 font-bold">
+          {isFinished ? 'Bạn đã hoàn thành chặng đua' : 'Bạn đã dừng cuộc đua sớm'}
+        </p>
         
         <div className="bg-blue-50 w-full p-6 rounded-2xl mb-6 border-2 border-blue-100">
           <p className="text-sm text-blue-600 font-bold uppercase tracking-wider mb-2">Tổng điểm</p>
@@ -127,7 +169,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack }) => {
         <div className="hidden md:block flex-1 mx-6 bg-gray-200 h-3 rounded-full overflow-hidden">
              <div 
                 className="h-full bg-blue-500 transition-all duration-500 ease-out"
-                style={{ width: `${((currentQuestionIndex) / QUESTIONS.length) * 100}%` }}
+                style={{ width: `${((currentQuestionIndex) / selectedQuestions.length) * 100}%` }}
              ></div>
         </div>
 
@@ -151,8 +193,8 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack }) => {
         <div 
             className="absolute top-0 bottom-0 w-8 finish-line right-0 z-0 transition-transform duration-1000"
             style={{ 
-                transform: currentQuestionIndex >= QUESTIONS.length - 1 ? 'translateX(0)' : 'translateX(100px)',
-                opacity: currentQuestionIndex >= QUESTIONS.length - 1 ? 1 : 0
+                transform: currentQuestionIndex >= selectedQuestions.length - 1 ? 'translateX(0)' : 'translateX(100px)',
+                opacity: currentQuestionIndex >= selectedQuestions.length - 1 ? 1 : 0
             }}
         ></div>
 
@@ -162,22 +204,23 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack }) => {
           style={{ 
             left: `${carPosition}%`,
             transitionDuration: isSuccess ? '500ms' : '800ms',
-            transitionTimingFunction: isSuccess ? 'cubic-bezier(0.34, 1.56, 0.64, 1)' : 'ease-in-out'
+            transitionTimingFunction: isSuccess ? 'cubic-bezier(0.34, 1.56, 0.64, 1)' : 'ease-in-out',
+            transform: 'scaleX(-1) translateY(-50%)'
           }}
         >
           <div className={`text-6xl filter drop-shadow-lg relative ${isSuccess ? 'animate-drive' : ''}`}>
-            <span style={{ display: 'inline-block', transform: 'scaleX(-1)' }}>🚗</span>
+            🚗
             {/* Motion lines */}
-            {isSuccess && <div className="absolute top-1/2 -left-4 w-6 h-1 bg-white/50 rounded-full animate-pulse"></div>}
-            {isSuccess && <div className="absolute bottom-2 -left-6 w-4 h-1 bg-white/30 rounded-full animate-pulse delay-75"></div>}
+            {isSuccess && <div className="absolute top-1/2 -right-4 w-6 h-1 bg-white/50 rounded-full animate-pulse"></div>}
+            {isSuccess && <div className="absolute bottom-2 -right-6 w-4 h-1 bg-white/30 rounded-full animate-pulse delay-75"></div>}
           </div>
           
           {/* Status Indicators */}
           {feedback.type === 'error' && (
-            <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-4xl animate-bounce">💥</div>
+            <div className="absolute top-1/2 -translate-y-1/2 -left-10 text-4xl animate-bounce" style={{ transform: 'translateY(-50%) scaleX(-1)' }}>💥</div>
           )}
           {feedback.type === 'success' && (
-            <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-3xl animate-bounce">💨</div>
+            <div className="absolute top-1/2 -translate-y-1/2 -right-16 text-3xl animate-bounce" style={{ transform: 'translateY(-50%) scaleX(-1)' }}>💨</div>
           )}
         </div>
       </div>
@@ -193,7 +236,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack }) => {
         <div className="p-6 md:p-8">
           <div className="flex justify-between items-start mb-6">
               <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
-                  Câu hỏi {currentQuestionIndex + 1}/{QUESTIONS.length}
+                  Câu hỏi {currentQuestionIndex + 1}/{selectedQuestions.length}
               </span>
           </div>
 
@@ -234,11 +277,22 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack }) => {
       </div>
 
       <button 
-        onClick={onBack}
+        onClick={handleGiveUp}
         className="text-gray-400 font-bold hover:text-red-500 transition flex items-center justify-center gap-2 py-2"
       >
         <i className="fa-solid fa-flag-checkered"></i> Bỏ cuộc & Quay lại
       </button>
+
+      <ConfirmModal
+        isOpen={showGiveUpModal}
+        title="Dừng cuộc đua?"
+        message="Bạn có chắc chắn muốn bỏ cuộc? Điểm số hiện tại sẽ được tính là kết quả cuối cùng của bạn."
+        onConfirm={confirmGiveUp}
+        onCancel={() => setShowGiveUpModal(false)}
+        confirmText="Dừng lại"
+        cancelText="Tiếp tục"
+        type="warning"
+      />
     </div>
   );
 };
