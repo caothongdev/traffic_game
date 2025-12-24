@@ -5,7 +5,6 @@ Một trò chơi tương tác giúp học và kiểm tra kiến thức về lu�
 ## ✨ Tính Năng
 
 - 🎮 **Chế độ chơi đa dạng**: Luyện tập, Thử thách hàng ngày
-- 📊 **Bảng xếp hạng**: Theo dõi thành tích của bạn và so sánh với người chơi khác
 - ⏱️ **Thống kê chi tiết**: Điểm số, độ chính xác, thời gian phản hồi trung bình
 - 🔄 **Cập nhật real-time**: Kết quả và bảng xếp hạng được cập nhật tức thời
 - 🎯 **Câu hỏi đa dạng**: Luật giao thông, biển báo, tình huống thực tế
