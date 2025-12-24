@@ -166,7 +166,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack }) => {
           }}
         >
           <div className={`text-6xl filter drop-shadow-lg relative ${isSuccess ? 'animate-drive' : ''}`}>
-            🚗
+            <span style={{ display: 'inline-block', transform: 'scaleX(-1)' }}>🚗</span>
             {/* Motion lines */}
             {isSuccess && <div className="absolute top-1/2 -left-4 w-6 h-1 bg-white/50 rounded-full animate-pulse"></div>}
             {isSuccess && <div className="absolute bottom-2 -left-6 w-4 h-1 bg-white/30 rounded-full animate-pulse delay-75"></div>}
