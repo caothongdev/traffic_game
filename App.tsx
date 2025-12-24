@@ -24,6 +24,7 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>(View.MENU);
   const [streak, setStreak] = useState(0);
   const [dailyTip, setDailyTip] = useState('');
+  const [isChallengeActive, setIsChallengeActive] = useState(false);
 
   useEffect(() => {
     const { streak: currentStreak } = getStreakInfo();
@@ -117,10 +118,9 @@ const App: React.FC = () => {
       case View.CHALLENGE:
         return (
           <div className="flex flex-col items-center w-full">
-            <ChallengeSection />
+            <ChallengeSection onPlayingStateChange={setIsChallengeActive} />
             {/* Hiện nút trở về menu khi KHÔNG trong lúc chơi thử thách */}
-            {/* ChallengeSection sẽ ẩn nút này khi đang chơi */}
-            <ChallengeSectionMenuBack />
+            {!isChallengeActive && <ChallengeSectionMenuBack />}
           </div>
         );
       case View.MULTIPLAYER:

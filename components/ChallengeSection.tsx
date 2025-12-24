@@ -10,9 +10,10 @@ import {
 } from '../utils/dailyChallenge';
 
 interface ChallengeSectionProps {
+  onPlayingStateChange?: (isPlaying: boolean) => void;
 }
 
-const ChallengeSection: React.FC<ChallengeSectionProps> = () => {
+const ChallengeSection: React.FC<ChallengeSectionProps> = ({ onPlayingStateChange }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasPlayed, setHasPlayed] = useState(false);
   const [timeUntilReset, setTimeUntilReset] = useState(getTimeUntilReset());
@@ -55,6 +56,7 @@ const ChallengeSection: React.FC<ChallengeSectionProps> = () => {
     // Kiểm tra lại hasPlayed trước khi cho chơi
     if (hasPlayed) return;
     setIsPlaying(true);
+    onPlayingStateChange?.(true);
   };
 
   const handleChallengeComplete = async (result: DailyChallengeResult) => {
@@ -66,6 +68,7 @@ const ChallengeSection: React.FC<ChallengeSectionProps> = () => {
 
   const handleBack = async () => {
     setIsPlaying(false);
+    onPlayingStateChange?.(false);
     await loadData();
   };
 

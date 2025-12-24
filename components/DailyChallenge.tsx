@@ -92,7 +92,7 @@ const DailyChallenge: React.FC<DailyChallengeProps> = ({ onBack, onComplete }) =
     const avgResponseTime = responseTimes.length > 0 
       ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length 
       : 0;
-    const accuracy = (correctAnswers / questions.length) * 100;
+    const accuracy = questions.length > 0 ? (correctAnswers / questions.length) * 100 : 0;
     
     const result: DailyChallengeResult = {
       date: getTodayString(),
@@ -122,8 +122,8 @@ const DailyChallenge: React.FC<DailyChallengeProps> = ({ onBack, onComplete }) =
   };
 
   if (isGameOver) {
-    const accuracy = (correctAnswers / questions.length) * 100;
-    const avgResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+    const accuracy = questions.length > 0 ? (correctAnswers / questions.length) * 100 : 0;
+    const avgResponseTime = responseTimes.length > 0 ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length : 0;
     const isFinished = currentQuestionIndex >= questions.length - 1;
 
     return (

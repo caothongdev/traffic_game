@@ -78,6 +78,7 @@ export interface DailyChallengeResult {
   violations: number; // số câu sai
   totalQuestions: number;
   completedAt: number; // timestamp
+  playerName?: string; // optional player name
 }
 
 export const saveDailyChallengeResult = async (result: DailyChallengeResult): Promise<void> => {

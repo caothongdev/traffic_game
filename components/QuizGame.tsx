@@ -119,7 +119,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack }) => {
 
   if (isGameOver) {
     const isFinished = currentQuestionIndex >= selectedQuestions.length - 1;
-    const accuracy = (correctAnswers / selectedQuestions.length) * 100;
+    const accuracy = selectedQuestions.length > 0 ? (correctAnswers / selectedQuestions.length) * 100 : 0;
     const avgResponseTime = responseTimes.length > 0 
       ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length 
       : 0;
