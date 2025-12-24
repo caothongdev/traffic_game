@@ -1,36 +1,38 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View } from './types';
 import QuizGame from './components/QuizGame';
 import MultiplayerMock from './components/MultiplayerMock';
 import ChallengeSection from './components/ChallengeSection';
-import LeaderboardSection from './components/LeaderboardSection';
-import NameEntry from './components/NameEntry';
 import ChallengeSectionMenuBack from './components/ChallengeSectionMenuBack';
+import { getStreakInfo } from './utils/dailyChallenge';
+
+const TRAFFIC_TIPS = [
+  "Luôn đội mũ bảo hiểm đạt chuẩn khi đi xe máy.",
+  "Không sử dụng điện thoại khi đang lái xe.",
+  "Tuân thủ giới hạn tốc độ, đặc biệt ở khu dân cư.",
+  "Đã uống rượu bia thì không lái xe.",
+  "Giữ khoảng cách an toàn với xe phía trước.",
+  "Quan sát kỹ gương chiếu hậu trước khi chuyển làn.",
+  "Nhường đường cho người đi bộ tại vạch kẻ đường.",
+  "Kiểm tra lốp xe và phanh thường xuyên.",
+  "Bật đèn xi-nhan ít nhất 30m trước khi rẽ.",
+  "Không đi ngược chiều, ngay cả đoạn đường ngắn."
+];
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>(View.MENU);
-  const [playerName, setPlayerName] = useState<string>('');
-  const [showNameEntry, setShowNameEntry] = useState(false);
-  const [pendingView, setPendingView] = useState<View | null>(null);
+  const [streak, setStreak] = useState(0);
+  const [dailyTip, setDailyTip] = useState('');
+
+  useEffect(() => {
+    const { streak: currentStreak } = getStreakInfo();
+    setStreak(currentStreak);
+    setDailyTip(TRAFFIC_TIPS[Math.floor(Math.random() * TRAFFIC_TIPS.length)]);
+  }, []);
 
   const handleViewChange = (view: View) => {
-    // Yêu cầu nhập tên cho các chế độ chơi
-    if ((view === View.GAME || view === View.CHALLENGE || view === View.MULTIPLAYER) && !playerName) {
-      setPendingView(view);
-      setShowNameEntry(true);
-    } else {
-      setCurrentView(view);
-    }
-  };
-
-  const handleNameSubmit = (name: string) => {
-    setPlayerName(name);
-    setShowNameEntry(false);
-    if (pendingView) {
-      setCurrentView(pendingView);
-      setPendingView(null);
-    }
+    setCurrentView(view);
   };
 
   const renderContent = () => {
@@ -86,29 +88,36 @@ const App: React.FC = () => {
                 </button>
             </div>
 
-            <button 
-              onClick={() => handleViewChange(View.LEADERBOARD)}
-              className="flex items-center justify-between p-5 bg-white rounded-3xl shadow-lg border border-transparent hover:border-yellow-200 transition active:scale-95 group"
-            >
-              <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-2xl flex items-center justify-center text-xl">
-                    <i className="fa-solid fa-trophy"></i>
-                 </div>
-                 <div className="text-left">
-                    <p className="font-bold text-gray-800">Bảng Xếp Hạng</p>
-                    <p className="text-xs text-gray-400">Top tay lái lụa</p>
-                 </div>
+            {/* Tip of the Day & Stats */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-white/50 mt-2">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="bg-yellow-100 text-yellow-600 w-8 h-8 rounded-full flex items-center justify-center">
+                  <i className="fa-regular fa-lightbulb"></i>
+                </div>
+                <h3 className="font-bold text-gray-800">Mẹo hay mỗi ngày</h3>
               </div>
-              <i className="fa-solid fa-chevron-right text-gray-300 group-hover:text-yellow-500 transition"></i>
-            </button>
+              <p className="text-gray-600 text-sm leading-relaxed italic">
+                "{dailyTip}"
+              </p>
+              
+              {streak > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Chuỗi thắng</span>
+                  <div className="flex items-center gap-2 text-orange-500 font-black">
+                    <i className="fa-solid fa-fire"></i>
+                    <span>{streak} ngày</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         );
       case View.GAME:
-        return <QuizGame onBack={() => setCurrentView(View.MENU)} playerName={playerName} />;
+        return <QuizGame onBack={() => setCurrentView(View.MENU)} />;
       case View.CHALLENGE:
         return (
           <div className="flex flex-col items-center w-full">
-            <ChallengeSection playerName={playerName} />
+            <ChallengeSection />
             {/* Hiện nút trở về menu khi KHÔNG trong lúc chơi thử thách */}
             {/* ChallengeSection sẽ ẩn nút này khi đang chơi */}
             <ChallengeSectionMenuBack />
@@ -123,15 +132,6 @@ const App: React.FC = () => {
             </button>
           </div>
         );
-      case View.LEADERBOARD:
-        return (
-          <div className="flex flex-col items-center w-full">
-            <LeaderboardSection />
-            <button onClick={() => setCurrentView(View.MENU)} className="mt-8 px-6 py-2 bg-white rounded-full shadow text-gray-500 font-bold hover:text-blue-600 transition flex items-center gap-2">
-              <i className="fa-solid fa-house"></i> Menu
-            </button>
-          </div>
-        );
       default:
         return null;
     }
@@ -139,15 +139,6 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-gray-800 relative overflow-hidden">
-      {showNameEntry && (
-        <NameEntry 
-          onNameSubmit={handleNameSubmit} 
-          onCancel={() => {
-            setShowNameEntry(false);
-            setPendingView(null);
-          }} 
-        />
-      )}
       {/* Background Decor Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-200/30 rounded-full blur-3xl animate-float -z-10"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-200/30 rounded-full blur-3xl animate-float -z-10" style={{animationDelay: '1.5s'}}></div>

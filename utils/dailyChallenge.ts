@@ -77,7 +77,6 @@ export interface DailyChallengeResult {
   avgResponseTime: number; // seconds
   violations: number; // số câu sai
   totalQuestions: number;
-  playerName: string;
   completedAt: number; // timestamp
 }
 
@@ -118,57 +117,49 @@ const saveToLocalStorage = (result: DailyChallengeResult): void => {
   localStorage.setItem('dailyChallenge_lastPlayed', today);
   localStorage.setItem('dailyChallenge_lastResult', JSON.stringify(result));
   
-  const leaderboardKey = `dailyChallenge_leaderboard_${today}`;
-  const existingData = localStorage.getItem(leaderboardKey);
-  const leaderboard: DailyChallengeResult[] = existingData ? JSON.parse(existingData) : [];
-  
-  leaderboard.push(result);
-  leaderboard.sort((a, b) => b.score - a.score);
-  
-  localStorage.setItem(leaderboardKey, JSON.stringify(leaderboard));
+  // Update Streak Logic
+  updateStreak(today);
 };
 
-export const getTodayLeaderboard = async (): Promise<DailyChallengeResult[]> => {
-  const today = getTodayString();
+const updateStreak = (today: string) => {
+  const lastStreakDate = localStorage.getItem('dailyChallenge_lastStreakDate');
+  let currentStreak = parseInt(localStorage.getItem('dailyChallenge_streak') || '0');
   
-  try {
-    const { data, error } = await supabase
-      .from('daily_challenges')
-      .select('*')
-      .eq('date', today)
-      .order('score', { ascending: false })
-      .limit(100);
+  if (!lastStreakDate) {
+    // First time playing
+    currentStreak = 1;
+  } else {
+    const lastDate = new Date(lastStreakDate);
+    const todayDate = new Date(today);
+    const diffTime = Math.abs(todayDate.getTime() - lastDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (error) {
-      console.error('Error fetching leaderboard:', error);
-      return getLocalLeaderboard(today);
+    if (diffDays === 1) {
+      // Consecutive day
+      currentStreak += 1;
+    } else if (diffDays > 1) {
+      // Missed a day (or more)
+      currentStreak = 1;
     }
-    
-    // Convert database format to app format, lọc bỏ người có điểm = 0, chỉ lấy tối đa 50 người
-    return (data || [])
-      .map(record => ({
-        date: record.date,
-        score: record.score,
-        accuracy: record.accuracy,
-        avgResponseTime: record.avg_response_time,
-        violations: record.violations,
-        totalQuestions: record.total_questions,
-        playerName: record.player_name,
-        completedAt: record.completed_at
-      }))
-      .filter(r => r.score > 0)
-      .slice(0, 50);
-  } catch (err) {
-    console.error('Error:', err);
-    return getLocalLeaderboard(today);
+    // If diffDays === 0 (same day), do nothing (keep streak)
   }
+  
+  localStorage.setItem('dailyChallenge_streak', currentStreak.toString());
+  localStorage.setItem('dailyChallenge_lastStreakDate', today);
 };
 
-// Fallback to localStorage
-const getLocalLeaderboard = (today: string): DailyChallengeResult[] => {
-  const leaderboardKey = `dailyChallenge_leaderboard_${today}`;
-  const data = localStorage.getItem(leaderboardKey);
-  return data ? JSON.parse(data) : [];
+export const getStreakInfo = () => {
+  const streak = parseInt(localStorage.getItem('dailyChallenge_streak') || '0');
+  const lastStreakDate = localStorage.getItem('dailyChallenge_lastStreakDate');
+  
+  // Check if streak is broken (if last played was more than 1 day ago)
+  // But we only reset when they play again. For display, we might want to show if it's active.
+  // For now, just return the stored streak.
+  
+  return {
+    streak,
+    lastStreakDate
+  };
 };
 
 export const getLastResult = async (): Promise<DailyChallengeResult | null> => {

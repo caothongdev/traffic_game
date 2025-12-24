@@ -3,14 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { QUESTIONS } from '../constants';
 import { Question } from '../types';
 import ConfirmModal from './ConfirmModal';
-import { saveMainGameResult } from '../utils/leaderboard';
 
 interface QuizGameProps {
   onBack: () => void;
-  playerName: string;
 }
 
-const QuizGame: React.FC<QuizGameProps> = ({ onBack, playerName }) => {
+const QuizGame: React.FC<QuizGameProps> = ({ onBack }) => {
   const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [carPosition, setCarPosition] = useState(5); // percentage start
@@ -22,12 +20,11 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack, playerName }) => {
   const [shake, setShake] = useState(false);
   const [showGiveUpModal, setShowGiveUpModal] = useState(false);
 
-  // Save result when game over
-  useEffect(() => {
-    if (isGameOver && playerName) {
-      saveMainGameResult(playerName, score);
-    }
-  }, [isGameOver]);
+  // Stats tracking
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [violations, setViolations] = useState(0);
+  const [responseTimes, setResponseTimes] = useState<number[]>([]);
+  const [questionStartTime, setQuestionStartTime] = useState(Date.now());
 
   // Random 15 câu hỏi khi game bắt đầu
   useEffect(() => {
@@ -68,10 +65,14 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack, playerName }) => {
   const handleAnswer = (index: number) => {
     if (isPaused || isGameOver) return;
 
+    const responseTime = (Date.now() - questionStartTime) / 1000;
+    setResponseTimes([...responseTimes, responseTime]);
+
     if (index === currentQuestion.correctIndex) {
       // Correct
       setFeedback({ type: 'success', message: 'Chính xác! Tăng tốc!' });
       setScore(prev => prev + 100 + (timeLeft * 10)); // Bonus points for speed
+      setCorrectAnswers(prev => prev + 1);
       setCarPosition(prev => Math.min(prev + 12, 85));
       setIsPaused(true);
       setTimeout(() => {
@@ -80,6 +81,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack, playerName }) => {
     } else {
       // Wrong
       setFeedback({ type: 'error', message: 'Vi phạm luật! Dừng xe!' });
+      setViolations(prev => prev + 1);
       setShake(true); // Trigger shake animation
       setIsPaused(true);
       setTimeout(() => {
@@ -106,6 +108,7 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack, playerName }) => {
     setFeedback({ type: null, message: '' });
     setIsPaused(false);
     setTimeLeft(20);
+    setQuestionStartTime(Date.now());
     if (currentQuestionIndex < selectedQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
@@ -116,6 +119,11 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack, playerName }) => {
 
   if (isGameOver) {
     const isFinished = currentQuestionIndex >= selectedQuestions.length - 1;
+    const accuracy = (correctAnswers / selectedQuestions.length) * 100;
+    const avgResponseTime = responseTimes.length > 0 
+      ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length 
+      : 0;
+
     return (
       <div className="flex flex-col items-center justify-center p-8 bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl animate-in fade-in zoom-in duration-500 max-w-md mx-auto border-4 border-yellow-400">
         <div className="text-6xl mb-4 animate-bounce">🏆</div>
@@ -129,6 +137,21 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack, playerName }) => {
         <div className="bg-blue-50 w-full p-6 rounded-2xl mb-6 border-2 border-blue-100">
           <p className="text-sm text-blue-600 font-bold uppercase tracking-wider mb-2">Tổng điểm</p>
           <p className="text-5xl font-black text-blue-700">{score}</p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 w-full mb-6">
+          <div className="bg-gray-50 p-3 rounded-xl text-center border border-gray-100">
+            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Chính xác</p>
+            <p className="text-xl font-black text-gray-800">{accuracy.toFixed(0)}%</p>
+          </div>
+          <div className="bg-gray-50 p-3 rounded-xl text-center border border-gray-100">
+            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Phản ứng</p>
+            <p className="text-xl font-black text-gray-800">{avgResponseTime.toFixed(1)}s</p>
+          </div>
+          <div className="bg-gray-50 p-3 rounded-xl text-center border border-gray-100">
+            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Vi phạm</p>
+            <p className="text-xl font-black text-red-500">{violations}</p>
+          </div>
         </div>
 
         <div className="flex flex-col w-full gap-3">

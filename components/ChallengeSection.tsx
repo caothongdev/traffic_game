@@ -4,21 +4,20 @@ import DailyChallenge from './DailyChallenge';
 import { 
   hasPlayedToday, 
   getTimeUntilReset, 
-  getTodayLeaderboard, 
   getLastResult,
+  getStreakInfo,
   DailyChallengeResult 
 } from '../utils/dailyChallenge';
 
 interface ChallengeSectionProps {
-  playerName: string;
 }
 
-const ChallengeSection: React.FC<ChallengeSectionProps> = ({ playerName }) => {
+const ChallengeSection: React.FC<ChallengeSectionProps> = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasPlayed, setHasPlayed] = useState(false);
   const [timeUntilReset, setTimeUntilReset] = useState(getTimeUntilReset());
-  const [leaderboard, setLeaderboard] = useState<DailyChallengeResult[]>([]);
   const [myResult, setMyResult] = useState<DailyChallengeResult | null>(null);
+  const [streak, setStreak] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -35,15 +34,16 @@ const ChallengeSection: React.FC<ChallengeSectionProps> = ({ playerName }) => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [played, board, result] = await Promise.all([
+      const [played, result] = await Promise.all([
         hasPlayedToday(),
-        getTodayLeaderboard(),
         getLastResult()
       ]);
       
+      const { streak: currentStreak } = getStreakInfo();
+      
       setHasPlayed(played);
-      setLeaderboard(board);
       setMyResult(result);
+      setStreak(currentStreak);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -58,10 +58,10 @@ const ChallengeSection: React.FC<ChallengeSectionProps> = ({ playerName }) => {
   };
 
   const handleChallengeComplete = async (result: DailyChallengeResult) => {
+    // Chỉ update state, KHÔNG đóng DailyChallenge để người chơi xem kết quả
     setHasPlayed(true);
     setMyResult(result);
-    setIsPlaying(false);
-    await loadData();
+    // isPlaying vẫn = true, để hiển thị màn hình kết quả trong DailyChallenge
   };
 
   const handleBack = async () => {
@@ -69,16 +69,30 @@ const ChallengeSection: React.FC<ChallengeSectionProps> = ({ playerName }) => {
     await loadData();
   };
 
+  const handleShare = () => {
+    if (!myResult) return;
+    
+    const text = `🚗 Traffic Game Challenge\n📅 ${myResult.date}\n🏆 Điểm: ${myResult.score}\n🔥 Streak: ${streak} ngày\n\nBạn có thể vượt qua tôi không?`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: 'Traffic Game Challenge Result',
+        text: text,
+      }).catch(console.error);
+    } else {
+      // Fallback for desktop
+      navigator.clipboard.writeText(text);
+      alert('Đã sao chép kết quả vào clipboard!');
+    }
+  };
+
   if (isPlaying) {
     return (
       <div className="w-full max-w-6xl mx-auto px-4 py-8">
-        <DailyChallenge onBack={handleBack} onComplete={handleChallengeComplete} playerName={playerName} />
+        <DailyChallenge onBack={handleBack} onComplete={handleChallengeComplete} />
       </div>
     );
   }
-
-  // Tìm thứ hạng của người chơi
-  const myRank = myResult ? leaderboard.findIndex(r => r.completedAt === myResult.completedAt) + 1 : 0;
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -90,12 +104,25 @@ const ChallengeSection: React.FC<ChallengeSectionProps> = ({ playerName }) => {
           
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="text-center md:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-xs font-bold uppercase tracking-wider mb-3">
-                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                Sự kiện hàng ngày
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-xs font-bold uppercase tracking-wider">
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                  Sự kiện hàng ngày
+                </div>
+                
+                {/* Streak Badge */}
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/20 backdrop-blur-md border border-orange-400/30 text-xs font-bold uppercase tracking-wider text-orange-100">
+                  <i className="fa-solid fa-fire text-orange-400 animate-pulse"></i>
+                  Streak: {streak} ngày
+                </div>
               </div>
+              
               <h2 className="text-4xl md:text-5xl font-black mb-2 tracking-tight">Thử Thách Hôm Nay</h2>
-              <p className="text-purple-100 text-lg font-medium max-w-md">Cùng một bộ câu hỏi, cùng một cơ hội. Ai sẽ là người xuất sắc nhất?</p>
+              <p className="text-purple-100 text-lg font-medium max-w-md">
+                {streak > 0 
+                  ? `Tuyệt vời! Bạn đã duy trì chuỗi ${streak} ngày liên tiếp.` 
+                  : "Cùng một bộ câu hỏi, cùng một cơ hội. Bắt đầu chuỗi thắng ngay hôm nay!"}
+              </p>
             </div>
 
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 text-center min-w-[160px]">
@@ -114,12 +141,14 @@ const ChallengeSection: React.FC<ChallengeSectionProps> = ({ playerName }) => {
                   <span className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-xl">📊</span> 
                   Kết quả của bạn
                 </h3>
-                {myRank > 0 && (
-                  <div className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-xl font-bold flex items-center gap-2 border border-yellow-200 shadow-sm">
-                    <i className="fa-solid fa-trophy"></i>
-                    Hạng #{myRank}
-                  </div>
-                )}
+                
+                <button 
+                  onClick={handleShare}
+                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded-xl font-bold flex items-center gap-2 border border-blue-200 shadow-sm hover:bg-blue-200 transition active:scale-95"
+                >
+                  <i className="fa-solid fa-share-nodes"></i>
+                  Chia sẻ
+                </button>
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -128,8 +157,10 @@ const ChallengeSection: React.FC<ChallengeSectionProps> = ({ playerName }) => {
                   <p className="text-4xl font-black text-purple-700 group-hover:scale-110 transition-transform origin-left">{myResult.score}</p>
                 </div>
                 <div className="p-5 bg-white rounded-2xl border border-green-100 shadow-sm hover:shadow-md transition group">
-                  <p className="text-xs text-green-500 font-bold uppercase tracking-wider mb-2 group-hover:text-green-600">Độ chính xác</p>
-                  <p className="text-4xl font-black text-green-700 group-hover:scale-110 transition-transform origin-left">{myResult.accuracy.toFixed(0)}%</p>
+                  <p className="text-xs text-green-500 font-bold uppercase tracking-wider mb-2 group-hover:text-green-600">Đúng / Sai</p>
+                  <p className="text-4xl font-black text-green-700 group-hover:scale-110 transition-transform origin-left">
+                    {myResult.totalQuestions - myResult.violations} <span className="text-xl text-gray-400 font-medium">/ {myResult.violations}</span>
+                  </p>
                 </div>
                 <div className="p-5 bg-white rounded-2xl border border-blue-100 shadow-sm hover:shadow-md transition group">
                   <p className="text-xs text-blue-500 font-bold uppercase tracking-wider mb-2 group-hover:text-blue-600">Phản ứng</p>
@@ -142,71 +173,6 @@ const ChallengeSection: React.FC<ChallengeSectionProps> = ({ playerName }) => {
               </div>
             </div>
           )}
-
-          {/* Leaderboard Top 10 */}
-          <div className="mb-10">
-            <h3 className="text-2xl font-black text-gray-800 mb-6 flex items-center gap-3">
-              <span className="w-10 h-10 rounded-xl bg-yellow-100 flex items-center justify-center text-xl">🏆</span> 
-              Bảng Xếp Hạng Hôm Nay
-            </h3>
-            
-            <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
-              {leaderboard.length > 0 ? (
-                <div className="divide-y divide-gray-100">
-                  {leaderboard.slice(0, 10).map((result, index) => (
-                    <div 
-                      key={result.completedAt}
-                      className={`p-5 flex items-center gap-5 transition-all hover:bg-gray-50 ${
-                        myResult?.completedAt === result.completedAt ? 'bg-purple-50/50' : ''
-                      }`}
-                    >
-                      <div className={`w-12 h-12 flex-shrink-0 rounded-2xl flex items-center justify-center font-black text-lg shadow-sm ${
-                        index === 0 ? 'bg-yellow-400 text-white ring-4 ring-yellow-100' :
-                        index === 1 ? 'bg-gray-300 text-white ring-4 ring-gray-100' :
-                        index === 2 ? 'bg-orange-400 text-white ring-4 ring-orange-100' :
-                        'bg-gray-100 text-gray-500'
-                      }`}>
-                        {index === 0 ? '1' : index === 1 ? '2' : index === 2 ? '3' : index + 1}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-bold text-gray-800 text-lg truncate">
-                            {result.playerName}
-                          </p>
-                          {myResult?.completedAt === result.completedAt && (
-                            <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] font-bold uppercase rounded-full">Bạn</span>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap gap-3 text-xs font-medium text-gray-500">
-                          <span className="flex items-center gap-1"><i className="fa-solid fa-check text-green-500"></i> {result.accuracy.toFixed(0)}%</span>
-                          <span className="flex items-center gap-1"><i className="fa-solid fa-bolt text-blue-500"></i> {result.avgResponseTime.toFixed(1)}s</span>
-                          <span className="flex items-center gap-1"><i className="fa-solid fa-triangle-exclamation text-red-500"></i> {result.violations} lỗi</span>
-                        </div>
-                      </div>
-                      
-                      <div className="text-right">
-                        <p className={`text-2xl font-black ${
-                          index === 0 ? 'text-yellow-500' : 
-                          index === 1 ? 'text-gray-500' :
-                          index === 2 ? 'text-orange-500' : 'text-gray-800'
-                        }`}>{result.score}</p>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase">điểm</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-16 px-4">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i className="fa-solid fa-flag-checkered text-3xl text-gray-300"></i>
-                  </div>
-                  <p className="font-bold text-gray-600 text-lg">Chưa có ai tham gia hôm nay</p>
-                  <p className="text-gray-400">Hãy là người đầu tiên ghi danh!</p>
-                </div>
-              )}
-            </div>
-          </div>
 
           {/* Nút chơi */}
           {hasPlayed ? (

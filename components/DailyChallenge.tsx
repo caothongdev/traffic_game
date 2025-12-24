@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Question } from '../types';
-import { getDailyQuestions, saveDailyChallengeResult, DailyChallengeResult } from '../utils/dailyChallenge';
+import { getDailyQuestions, saveDailyChallengeResult, DailyChallengeResult, getTodayString } from '../utils/dailyChallenge';
 import ConfirmModal from './ConfirmModal';
 
 interface DailyChallengeProps {
   onBack: () => void;
   onComplete: (result: DailyChallengeResult) => void;
-  playerName: string;
 }
 
-const DailyChallenge: React.FC<DailyChallengeProps> = ({ onBack, onComplete, playerName }) => {
+const DailyChallenge: React.FC<DailyChallengeProps> = ({ onBack, onComplete }) => {
   const [questions] = useState<Question[]>(getDailyQuestions(10));
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [carPosition, setCarPosition] = useState(5);
@@ -96,13 +95,12 @@ const DailyChallenge: React.FC<DailyChallengeProps> = ({ onBack, onComplete, pla
     const accuracy = (correctAnswers / questions.length) * 100;
     
     const result: DailyChallengeResult = {
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayString(),
       score,
       accuracy,
       avgResponseTime,
       violations,
       totalQuestions: questions.length,
-      playerName: playerName,
       completedAt: Date.now()
     };
     
@@ -126,49 +124,45 @@ const DailyChallenge: React.FC<DailyChallengeProps> = ({ onBack, onComplete, pla
   if (isGameOver) {
     const accuracy = (correctAnswers / questions.length) * 100;
     const avgResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+    const isFinished = currentQuestionIndex >= questions.length - 1;
 
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 animate-in fade-in zoom-in duration-500">
-        <div className="bg-white rounded-[2.5rem] shadow-2xl p-8 md:p-12 max-w-lg w-full text-center border-4 border-white ring-4 ring-purple-50 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
-          
-          <div className="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce shadow-lg ring-4 ring-yellow-50">
-            <span className="text-5xl">🏆</span>
-          </div>
-          
-          <h2 className="text-4xl font-black text-gray-800 mb-2 tracking-tight">HOÀN THÀNH!</h2>
-          <p className="text-gray-500 mb-8 font-medium">Bạn đã chinh phục thử thách hôm nay</p>
-          
-          <div className="bg-gray-50 rounded-3xl p-6 mb-8 border border-gray-100">
-            <div className="mb-6">
-              <p className="text-xs text-purple-500 font-bold uppercase tracking-wider mb-1">Tổng điểm</p>
-              <p className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">{score}</p>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4 divide-x divide-gray-200">
-              <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Chính xác</p>
-                <p className="text-xl font-black text-gray-800">{accuracy.toFixed(0)}%</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Phản ứng</p>
-                <p className="text-xl font-black text-gray-800">{avgResponseTime.toFixed(1)}s</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Vi phạm</p>
-                <p className="text-xl font-black text-red-500">{violations}</p>
-              </div>
-            </div>
-          </div>
-
-          <button 
-            onClick={onBack}
-            className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 group"
-          >
-            <i className="fa-solid fa-list-ol group-hover:-translate-x-1 transition-transform"></i>
-            Xem Bảng Xếp Hạng
-          </button>
+      <div className="flex flex-col items-center justify-center p-8 bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl animate-in fade-in zoom-in duration-500 max-w-md mx-auto border-4 border-yellow-400">
+        <div className="text-6xl mb-4 animate-bounce">🏆</div>
+        <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-500 mb-2">
+          {isFinished ? 'HOÀN THÀNH!' : 'KẾT THÚC!'}
+        </h2>
+        <p className="text-gray-500 mb-6 font-bold">
+          {isFinished ? 'Bạn đã chinh phục thử thách hôm nay' : 'Bạn đã dừng cuộc đua sớm'}
+        </p>
+        
+        <div className="bg-blue-50 w-full p-6 rounded-2xl mb-6 border-2 border-blue-100">
+          <p className="text-sm text-blue-600 font-bold uppercase tracking-wider mb-2">Tổng điểm</p>
+          <p className="text-5xl font-black text-blue-700">{score}</p>
         </div>
+
+        <div className="grid grid-cols-3 gap-4 w-full mb-6">
+          <div className="bg-gray-50 p-3 rounded-xl text-center border border-gray-100">
+            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Chính xác</p>
+            <p className="text-xl font-black text-gray-800">{accuracy.toFixed(0)}%</p>
+          </div>
+          <div className="bg-gray-50 p-3 rounded-xl text-center border border-gray-100">
+            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Phản ứng</p>
+            <p className="text-xl font-black text-gray-800">{avgResponseTime.toFixed(1)}s</p>
+          </div>
+          <div className="bg-gray-50 p-3 rounded-xl text-center border border-gray-100">
+            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Vi phạm</p>
+            <p className="text-xl font-black text-red-500">{violations}</p>
+          </div>
+        </div>
+
+        <button 
+          onClick={onBack}
+          className="w-full py-4 bg-gray-900 text-white rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 group"
+        >
+          <i className="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
+          Quay lại
+        </button>
       </div>
     );
   }

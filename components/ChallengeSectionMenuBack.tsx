@@ -1,5 +1,4 @@
 import React from 'react';
-import { useSelector } from 'react-redux'; // Nếu không dùng redux, có thể bỏ dòng này
 
 // Component này chỉ hiển thị nút trở về menu khi không đang chơi thử thách
 const ChallengeSectionMenuBack: React.FC = () => {

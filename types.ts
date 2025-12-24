@@ -3,8 +3,7 @@ export enum View {
   MENU = 'menu',
   GAME = 'game',
   CHALLENGE = 'challenge',
-  MULTIPLAYER = 'multiplayer',
-  LEADERBOARD = 'leaderboard'
+  MULTIPLAYER = 'multiplayer'
 }
 
 export interface Question {
