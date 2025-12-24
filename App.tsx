@@ -108,9 +108,6 @@ const App: React.FC = () => {
         return (
           <div className="flex flex-col items-center w-full">
             <ChallengeSection playerName={playerName} />
-            <button onClick={() => setCurrentView(View.MENU)} className="mt-8 px-6 py-2 bg-white rounded-full shadow text-gray-500 font-bold hover:text-blue-600 transition flex items-center gap-2">
-              <i className="fa-solid fa-house"></i> Menu
-            </button>
           </div>
         );
       case View.MULTIPLAYER:

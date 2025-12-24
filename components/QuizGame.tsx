@@ -250,19 +250,19 @@ const QuizGame: React.FC<QuizGameProps> = ({ onBack, playerName }) => {
                 key={idx}
                 disabled={isPaused}
                 onClick={() => handleAnswer(idx)}
-                className={`group relative w-full text-left p-4 md:p-5 rounded-2xl border-2 transition-all duration-200 active:scale-[0.98] ${
+                className={`relative w-full text-left p-4 md:p-5 rounded-2xl border-2 transition-all duration-200 ${
                   isPaused 
                     ? 'opacity-60 cursor-not-allowed border-gray-100 bg-gray-50' 
-                    : 'hover:border-blue-400 hover:shadow-md hover:bg-blue-50/50 border-gray-100 bg-white'
+                    : 'border-gray-100 bg-white'
                 }`}
               >
                 <div className="flex items-center gap-4">
                     <span className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-colors ${
-                        isPaused ? 'bg-gray-200 text-gray-500' : 'bg-gray-100 text-gray-500 group-hover:bg-blue-500 group-hover:text-white'
+                        isPaused ? 'bg-gray-200 text-gray-500' : 'bg-gray-100 text-gray-500'
                     }`}>
                     {String.fromCharCode(65 + idx)}
                     </span>
-                    <span className="font-medium text-gray-700 group-hover:text-gray-900">{option}</span>
+                    <span className="font-medium text-gray-700">{option}</span>
                 </div>
               </button>
             ))}

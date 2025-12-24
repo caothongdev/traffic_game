@@ -277,19 +277,19 @@ const DailyChallenge: React.FC<DailyChallengeProps> = ({ onBack, onComplete, pla
                 key={idx}
                 disabled={isPaused}
                 onClick={() => handleAnswer(idx)}
-                className={`group relative w-full text-left p-5 md:p-6 rounded-2xl border-2 transition-all duration-200 active:scale-[0.99] ${
+                className={`relative w-full text-left p-5 md:p-6 rounded-2xl border-2 transition-all duration-200 ${
                   isPaused 
                     ? 'opacity-50 cursor-not-allowed border-gray-100 bg-gray-50' 
-                    : 'hover:border-indigo-500 hover:shadow-lg hover:bg-indigo-50/30 border-gray-100 bg-white'
+                    : 'border-gray-100 bg-white'
                 }`}
               >
                 <div className="flex items-center gap-5">
                     <span className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg transition-colors shadow-sm ${
-                        isPaused ? 'bg-gray-200 text-gray-400' : 'bg-gray-100 text-gray-500 group-hover:bg-indigo-500 group-hover:text-white'
+                        isPaused ? 'bg-gray-200 text-gray-400' : 'bg-gray-100 text-gray-500'
                     }`}>
                     {String.fromCharCode(65 + idx)}
                     </span>
-                    <span className="font-bold text-lg text-gray-700 group-hover:text-gray-900">{option}</span>
+                    <span className="font-bold text-lg text-gray-700">{option}</span>
                 </div>
               </button>
             ))}
