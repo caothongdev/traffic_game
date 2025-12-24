@@ -52,6 +52,8 @@ const ChallengeSection: React.FC<ChallengeSectionProps> = ({ playerName }) => {
   };
 
   const handleStartChallenge = () => {
+    // Kiểm tra lại hasPlayed trước khi cho chơi
+    if (hasPlayed) return;
     setIsPlaying(true);
   };
 

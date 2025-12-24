@@ -6,6 +6,7 @@ import MultiplayerMock from './components/MultiplayerMock';
 import ChallengeSection from './components/ChallengeSection';
 import LeaderboardSection from './components/LeaderboardSection';
 import NameEntry from './components/NameEntry';
+import ChallengeSectionMenuBack from './components/ChallengeSectionMenuBack';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>(View.MENU);
@@ -108,6 +109,9 @@ const App: React.FC = () => {
         return (
           <div className="flex flex-col items-center w-full">
             <ChallengeSection playerName={playerName} />
+            {/* Hiện nút trở về menu khi KHÔNG trong lúc chơi thử thách */}
+            {/* ChallengeSection sẽ ẩn nút này khi đang chơi */}
+            <ChallengeSectionMenuBack />
           </div>
         );
       case View.MULTIPLAYER:

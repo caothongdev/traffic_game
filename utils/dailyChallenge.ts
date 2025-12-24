@@ -40,11 +40,16 @@ export const getDailyQuestions = (count: number = 10): Question[] => {
 // Kiểm tra đã chơi hôm nay chưa
 export const hasPlayedToday = async (): Promise<boolean> => {
   const today = getTodayString();
-  
-  // Lấy player name từ localStorage (tạm thời)
   const playerName = localStorage.getItem('playerName') || '';
   if (!playerName) return false;
-  
+
+  // Ưu tiên kiểm tra localStorage trước
+  const lastPlayed = localStorage.getItem('dailyChallenge_lastPlayed');
+  if (lastPlayed === today) {
+    return true;
+  }
+
+  // Nếu chưa có trong localStorage, kiểm tra Supabase
   try {
     const { data, error } = await supabase
       .from('daily_challenges')
@@ -52,8 +57,13 @@ export const hasPlayedToday = async (): Promise<boolean> => {
       .eq('date', today)
       .eq('player_name', playerName)
       .single();
-    
-    return !!data && !error;
+
+    if (!!data && !error) {
+      // Nếu có trên Supabase thì cũng lưu vào localStorage để lần sau kiểm tra nhanh hơn
+      localStorage.setItem('dailyChallenge_lastPlayed', today);
+      return true;
+    }
+    return false;
   } catch {
     return false;
   }
@@ -134,17 +144,20 @@ export const getTodayLeaderboard = async (): Promise<DailyChallengeResult[]> => 
       return getLocalLeaderboard(today);
     }
     
-    // Convert database format to app format
-    return (data || []).map(record => ({
-      date: record.date,
-      score: record.score,
-      accuracy: record.accuracy,
-      avgResponseTime: record.avg_response_time,
-      violations: record.violations,
-      totalQuestions: record.total_questions,
-      playerName: record.player_name,
-      completedAt: record.completed_at
-    }));
+    // Convert database format to app format, lọc bỏ người có điểm = 0, chỉ lấy tối đa 50 người
+    return (data || [])
+      .map(record => ({
+        date: record.date,
+        score: record.score,
+        accuracy: record.accuracy,
+        avgResponseTime: record.avg_response_time,
+        violations: record.violations,
+        totalQuestions: record.total_questions,
+        playerName: record.player_name,
+        completedAt: record.completed_at
+      }))
+      .filter(r => r.score > 0)
+      .slice(0, 50);
   } catch (err) {
     console.error('Error:', err);
     return getLocalLeaderboard(today);

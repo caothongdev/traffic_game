@@ -106,7 +106,10 @@ const DailyChallenge: React.FC<DailyChallengeProps> = ({ onBack, onComplete, pla
       completedAt: Date.now()
     };
     
+    // Đánh dấu hoàn thành thử thách (chỉ khi thực sự hoàn thành hoặc bấm bỏ cuộc)
     saveDailyChallengeResult(result);
+    // Đánh dấu vào localStorage là đã hoàn thành hôm nay
+    localStorage.setItem('dailyChallenge_lastPlayed', result.date);
     setIsGameOver(true);
     onComplete(result);
   };
@@ -309,7 +312,7 @@ const DailyChallenge: React.FC<DailyChallengeProps> = ({ onBack, onComplete, pla
           onClick={handleGiveUp}
           className="text-gray-400 font-bold hover:text-red-500 transition-colors inline-flex items-center gap-2 py-2 px-4 rounded-full hover:bg-red-50"
         >
-          <i className="fa-solid fa-flag"></i> Bỏ cuộc
+          <i className="fa-solid fa-flag-checkered"></i> Bỏ cuộc & Quay lại
         </button>
       </div>
 
